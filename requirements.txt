@@ -1,0 +1,21 @@
+# RunPod serverless runtime
+runpod>=1.7.0
+
+# Model weights download
+huggingface-hub>=0.23.0
+hf_transfer>=0.1.6
+
+# Image handling
+Pillow>=10.0.0
+
+# Mesh processing and repair
+trimesh>=4.4.0
+numpy>=1.24.0
+
+# GLB/STL export support
+pygltflib>=1.16.0
+
+# TRELLIS dependencies (remainder handled by TRELLIS's own setup.py)
+torch>=2.4.0
+torchvision>=0.19.0
+einops>=0.8.0

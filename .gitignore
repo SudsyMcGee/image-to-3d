@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+.env.local
+*.pth
+*.ckpt
+hf_cache/
+output/
+*.glb
+*.stl
+*.obj

@@ -9,6 +9,16 @@ build/
 *.ckpt
 hf_cache/
 output/
+input/
 *.glb
 *.stl
 *.obj
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# local only
+PLAN.md
+.claude/
+*.log

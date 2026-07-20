@@ -59,7 +59,7 @@ pipeline = None
 
 # Flag file stores image version — if it doesn't match or imports fail, recompile.
 _EXT_FLAG = "/workspace/cuda_extensions_installed"
-_IMAGE_VERSION = "v9"
+_IMAGE_VERSION = "v10"
 
 
 def _cuda_extensions_importable() -> bool:
@@ -257,32 +257,28 @@ def handler(job: dict) -> dict:
                 **sampler_params,
             )
 
-        glb_mesh = postprocessing_utils.to_glb(
-            outputs["gaussian"][0],
-            outputs["mesh"][0],
-            simplify=simplify_ratio,
-            texture_size=texture_size,
-            verbose=False,
-        )
-
-        # to_glb returns a trimesh object; export to raw bytes
-        glb_bytes = glb_mesh.export(file_type="glb")
-
-        if output_format == "glb":
-            mesh_bytes = glb_bytes
+        if output_format == "stl":
+            # For printing: use the raw FlexiCubes mesh directly.
+            # to_glb decimates and bakes textures — wrong for print.
+            raw = outputs["mesh"][0]
+            verts = raw.vertices.cpu().float().numpy()
+            faces = raw.faces.cpu().long().numpy()
+            combined = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
+            combined = repair_mesh(combined)
+            mesh_bytes = export_mesh(combined, "stl")
         else:
+            glb_mesh = postprocessing_utils.to_glb(
+                outputs["gaussian"][0],
+                outputs["mesh"][0],
+                simplify=simplify_ratio,
+                texture_size=texture_size,
+                verbose=False,
+            )
+            mesh_bytes = glb_mesh.export(file_type="glb")
             if isinstance(glb_mesh, trimesh.Scene):
-                flat = trimesh.util.concatenate(list(glb_mesh.geometry.values()))
+                combined = trimesh.util.concatenate(list(glb_mesh.geometry.values()))
             else:
-                flat = glb_mesh
-            flat = repair_mesh(flat)
-            mesh_bytes = export_mesh(flat, "stl")
-
-        # stats: use the already-in-memory mesh object, no need to reload
-        if isinstance(glb_mesh, trimesh.Scene):
-            combined = trimesh.util.concatenate(list(glb_mesh.geometry.values()))
-        else:
-            combined = glb_mesh
+                combined = glb_mesh
 
         mesh_b64 = base64.b64encode(mesh_bytes).decode("utf-8")
 

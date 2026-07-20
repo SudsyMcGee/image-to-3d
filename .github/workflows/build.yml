@@ -44,7 +44,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/sudsymcgee/trellis2-stl:latest
-            ghcr.io/sudsymcgee/trellis2-stl:v9
+            ghcr.io/sudsymcgee/trellis2-stl:v10
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |

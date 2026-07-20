@@ -59,7 +59,7 @@ pipeline = None
 
 # Flag file stores image version — if it doesn't match or imports fail, recompile.
 _EXT_FLAG = "/workspace/cuda_extensions_installed"
-_IMAGE_VERSION = "v9"
+_IMAGE_VERSION = "v9-r2"
 
 
 def _cuda_extensions_importable() -> bool:
@@ -76,7 +76,7 @@ def _install_cuda_extensions():
     # nvcc lives in /usr/local/cuda/bin — must be on PATH for compilation to work
     cuda_bin = "/usr/local/cuda/bin"
     os.environ["PATH"] = f"{cuda_bin}:{os.environ.get('PATH', '')}"
-    os.environ["TORCH_CUDA_ARCH_LIST"] = "8.9"
+    os.environ["TORCH_CUDA_ARCH_LIST"] = "8.0;8.6;8.9"
     os.environ["FORCE_CUDA"] = "1"
 
     steps = [

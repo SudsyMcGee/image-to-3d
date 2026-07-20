@@ -59,7 +59,7 @@ pipeline = None
 
 # Flag file stores image version — if it doesn't match or imports fail, recompile.
 _EXT_FLAG = "/workspace/cuda_extensions_installed"
-_IMAGE_VERSION = "v10"
+_IMAGE_VERSION = "v9"
 
 
 def _cuda_extensions_importable() -> bool:

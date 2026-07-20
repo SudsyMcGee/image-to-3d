@@ -39,6 +39,7 @@ import os
 import sys
 import subprocess
 import base64
+import gzip
 import io
 import tempfile
 import traceback
@@ -283,7 +284,9 @@ def handler(job: dict) -> dict:
             trimesh.repair.fix_winding(combined)
             trimesh.repair.fix_normals(combined)
             mesh_bytes = export_mesh(combined, "stl")
-            print(f"STL: exported {len(mesh_bytes)} bytes", flush=True)
+            print(f"STL: raw {len(mesh_bytes)} bytes, compressing ...", flush=True)
+            mesh_bytes = gzip.compress(mesh_bytes, compresslevel=6)
+            print(f"STL: compressed to {len(mesh_bytes)} bytes", flush=True)
         else:
             glb_mesh = postprocessing_utils.to_glb(
                 outputs["gaussian"][0],
@@ -303,6 +306,7 @@ def handler(job: dict) -> dict:
         return {
             "mesh_b64": mesh_b64,
             "format": output_format,
+            "compressed": output_format == "stl",
             "vertex_count": int(len(combined.vertices)),
             "face_count": int(len(combined.faces)),
         }

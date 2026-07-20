@@ -51,7 +51,7 @@ import trimesh
 sys.path.insert(0, "/app/TRELLIS")
 
 MODEL_ID = os.environ.get("MODEL_ID", "JeffreyXiang/TRELLIS-image-large")
-HF_HOME = os.environ.get("HF_HOME", "/workspace/hf_cache")
+HF_HOME = os.environ.get("HF_HOME", "/workspace/hf_cache_v10")
 os.environ["HF_HOME"] = HF_HOME  # ensure huggingface_hub uses our cache dir
 
 _STARTUP_ERROR = None
@@ -59,7 +59,7 @@ pipeline = None
 
 # Flag file stores image version — if it doesn't match or imports fail, recompile.
 _EXT_FLAG = "/workspace/cuda_extensions_installed"
-_IMAGE_VERSION = "v9-r2"
+_IMAGE_VERSION = "v10"
 
 
 def _cuda_extensions_importable() -> bool:
@@ -211,13 +211,17 @@ def handler(job: dict) -> dict:
     if output_format not in ("glb", "stl"):
         return {"error": f"Unsupported output_format '{output_format}'. Use 'glb' or 'stl'."}
 
-    simplify_ratio = float(inp.get("simplify_ratio", 1.0))
+    simplify_ratio = float(inp.get("simplify_ratio", 0.97))
     texture_size = int(inp.get("texture_size", 2048))
     seed = int(inp.get("seed", 42))
-    sparse_steps = int(inp.get("sparse_steps", 50))
+    sparse_steps = int(inp.get("sparse_steps", 16))
     sparse_cfg = float(inp.get("sparse_cfg", 7.5))
-    slat_steps = int(inp.get("slat_steps", 50))
-    slat_cfg = float(inp.get("slat_cfg", 7.5))
+    slat_steps = int(inp.get("slat_steps", 16))
+    slat_cfg = float(inp.get("slat_cfg", 3.5))
+
+    print(f"PARAMS: sparse_steps={sparse_steps} sparse_cfg={sparse_cfg} "
+          f"slat_steps={slat_steps} slat_cfg={slat_cfg} "
+          f"simplify={simplify_ratio} texture={texture_size} seed={seed}", flush=True)
 
     multi_mode = inp.get("mode", "stochastic")
     if multi_mode not in ("stochastic", "multidiffusion"):
@@ -245,6 +249,7 @@ def handler(job: dict) -> dict:
         return {"error": f"Image load failed: {e}"}
 
     try:
+        print("Starting inference ...", flush=True)
         if is_multi:
             outputs = pipeline.run_multi_image(
                 images,
@@ -256,6 +261,15 @@ def handler(job: dict) -> dict:
                 images[0],
                 **sampler_params,
             )
+
+        raw_mesh = outputs["mesh"][0]
+        v_shape = raw_mesh.vertices.shape
+        f_shape = raw_mesh.faces.shape
+        print(f"DIAGNOSTIC: mesh vertices={v_shape} faces={f_shape}", flush=True)
+        if v_shape[0] == 0:
+            return {"error": f"Pipeline returned empty mesh (0 vertices). "
+                             f"Check CUDA extensions and model. "
+                             f"slat_cfg={slat_cfg} may cause degenerate output if too high."}
 
         if output_format == "stl":
             # For printing: use the raw FlexiCubes mesh directly.

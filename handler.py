@@ -277,9 +277,13 @@ def handler(job: dict) -> dict:
             raw = outputs["mesh"][0]
             verts = raw.vertices.cpu().float().numpy()
             faces = raw.faces.cpu().long().numpy()
+            print(f"STL: raw mesh {len(verts)} verts {len(faces)} faces", flush=True)
             combined = trimesh.Trimesh(vertices=verts, faces=faces, process=False)
-            combined = repair_mesh(combined)
+            # Only do winding fix — fill_holes is O(n^2) and crashes on large meshes
+            trimesh.repair.fix_winding(combined)
+            trimesh.repair.fix_normals(combined)
             mesh_bytes = export_mesh(combined, "stl")
+            print(f"STL: exported {len(mesh_bytes)} bytes", flush=True)
         else:
             glb_mesh = postprocessing_utils.to_glb(
                 outputs["gaussian"][0],
